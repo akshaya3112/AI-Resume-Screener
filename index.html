@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Screener</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --panel: #12121a;
+      --border: #2a2a3a;
+      --accent: #00f5a0;
+      --accent2: #00b4d8;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --danger: #ff4d6d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,245,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,160,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      animation: fadeDown 0.8s ease both;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(0,245,160,0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 1rem;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease both;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover { border-color: rgba(0,245,160,0.3); }
+
+    .card-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label::before {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(0,245,160,0.04);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+    .upload-zone h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+    .upload-zone p { color: var(--muted); font-size: 0.85rem; font-family: 'Space Mono', monospace; }
+
+    .file-selected {
+      margin-top: 16px;
+      background: rgba(0,245,160,0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      display: none;
+    }
+
+    textarea {
+      width: 100%;
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      padding: 16px;
+      resize: vertical;
+      min-height: 160px;
+      transition: border-color 0.3s;
+      outline: none;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,245,160,0.3); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .loading { display: none; text-align: center; padding: 40px; }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    .loading p { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; }
+
+    #results { display: none; animation: fadeUp 0.6s ease both; }
+
+    .score-ring { display: flex; flex-direction: column; align-items: center; margin-bottom: 32px; }
+
+    .ring-container { position: relative; width: 160px; height: 160px; margin-bottom: 16px; }
+
+    .ring-container svg { transform: rotate(-90deg); width: 160px; height: 160px; }
+
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 440;
+      stroke-dashoffset: 440;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+      filter: drop-shadow(0 0 8px var(--accent));
+    }
+
+    .score-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .score-label { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+    .verdict {
+      text-align: center;
+      padding: 16px 24px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    .verdict.high { background: rgba(0,245,160,0.1); border: 1px solid var(--accent); color: var(--accent); }
+    .verdict.mid { background: rgba(255,193,7,0.1); border: 1px solid #ffc107; color: #ffc107; }
+    .verdict.low { background: rgba(255,77,109,0.1); border: 1px solid var(--danger); color: var(--danger); }
+
+    .section-title { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+
+    .keywords-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+
+    .keyword-tag { padding: 6px 14px; border-radius: 100px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; }
+    .keyword-tag.match { background: rgba(0,245,160,0.12); border: 1px solid rgba(0,245,160,0.4); color: var(--accent); }
+    .keyword-tag.miss { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--danger); }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+
+    .stat-box { background: #0d0d14; border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+    .stat-box .num { font-size: 1.8rem; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--accent2); }
+    .stat-box .lbl { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+    .suggestion-box { background: rgba(0,180,216,0.05); border: 1px solid rgba(0,180,216,0.2); border-radius: 10px; padding: 20px; }
+    .suggestion-box p { color: var(--accent2); font-family: 'Space Mono', monospace; font-size: 13px; line-height: 1.8; }
+
+    .btn-outline {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-outline:hover { border-color: var(--muted); color: var(--text); }
+
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">⚡ AWS Cloud Hackathon 2026</div>
+    <h1>AI Resume<br/>Screener</h1>
+    <p>// machine learning powered ranking system</p>
+  </header>
+
+  <div id="formSection">
+    <div class="card" style="animation-delay:0.1s">
+      <div class="card-label">Step 01 — Upload Resume</div>
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="resumeFile" accept=".pdf,.txt,.doc,.docx"/>
+        <span class="upload-icon">📄</span>
+        <h3>Drop your resume here</h3>
+        <p>PDF, DOC, TXT supported</p>
+        <div class="file-selected" id="fileSelected">✓ File ready</div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.2s">
+      <div class="card-label">Step 02 — Job Description</div>
+      <textarea id="jobDesc" placeholder="Paste the job description here...&#10;&#10;Example:&#10;We are looking for a Python developer with experience in AWS, machine learning, REST APIs, and SQL databases..."></textarea>
+    </div>
+
+    <div class="card" style="animation-delay:0.3s">
+      <div class="card-label">Step 03 — Analyze</div>
+      <button class="btn" id="analyzeBtn" onclick="analyzeResume()">⚡ Analyze Resume</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>// analyzing resume with AI...</p>
+  </div>
+
+  <div id="results">
+    <div class="card">
+      <div class="card-label">Analysis Complete</div>
+
+      <div class="score-ring">
+        <div class="ring-container">
+          <svg viewBox="0 0 160 160">
+            <circle class="ring-bg" cx="80" cy="80" r="70"/>
+            <circle class="ring-fill" id="ringFill" cx="80" cy="80" r="70"/>
+          </svg>
+          <div class="score-number" id="scoreNum">0</div>
+        </div>
+        <div class="score-label">Match Score</div>
+      </div>
+
+      <div class="verdict" id="verdict"></div>
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="num" id="matchCount">0</div>
+          <div class="lbl">Keywords Matched</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="missCount">0</div>
+          <div class="lbl">Keywords Missing</div>
+        </div>
+        <div class="stat-box">
+          <div class="num" id="totalCount">0</div>
+          <div class="lbl">Total Analyzed</div>
+        </div>
+      </div>
+
+      <div class="section-title">✅ Matched Keywords</div>
+      <div class="keywords-grid" id="matchedKeywords"></div>
+
+      <div class="section-title">❌ Missing Keywords</div>
+      <div class="keywords-grid" id="missingKeywords"></div>
+
+      <div class="section-title" style="margin-top:24px">💡 AI Suggestion</div>
+      <div class="suggestion-box">
+        <p id="suggestion"></p>
+      </div>
+
+      <button class="btn-outline" onclick="resetForm()">↩ Analyze Another Resume</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('resumeFile').addEventListener('change', function() {
+    const el = document.getElementById('fileSelected');
+    if (this.files[0]) {
+      el.textContent = '✓ ' + this.files[0].name;
+      el.style.display = 'block';
+    }
+  });
+
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      document.getElementById('resumeFile').files = e.dataTransfer.files;
+      const el = document.getElementById('fileSelected');
+      el.textContent = '✓ ' + file.name;
+      el.style.display = 'block';
+    }
+  });
+
+  async function analyzeResume() {
+    const fileInput = document.getElementById('resumeFile');
+    const jobDesc = document.getElementById('jobDesc').value.trim();
+
+    if (!fileInput.files[0]) { alert('Please upload a resume!'); return; }
+    if (!jobDesc) { alert('Please enter a job description!'); return; }
+
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+
+    const formData = new FormData();
+    formData.append('resume', fileInput.files[0]);
+    formData.append('job_description', jobDesc);
+
+    try {
+      const response = await fetch('http://localhost:5000/analyze', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+      document.getElementById('loading').style.display = 'none';
+      showResults({
+        score: result.score,
+        matched: result.matched_keywords,
+        missing: result.missing_keywords,
+        verdict: result.verdict,
+        suggestion: result.suggestion,
+        total: result.total_keywords
+      });
+    } catch(e) {
+      alert('Error! Make sure app.py is running in terminal.');
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('formSection').style.display = 'block';
+    }
+  }
+
+  function scoreResume(resumeText, jobDesc) {
+    const resumeLower = resumeText.toLowerCase();
+
+    const stopwords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','be','was','were','have','has','will','we','our','you','your','their','this','that','it','as','not','they','than','more','also','can','which','all','about','up','out','if','into','through','during','including','using','based','experience','looking','work','working','team','ability','strong','knowledge','skills','required','preferred','must','should','good','excellent','great','understanding','able','help']);
+
+    const words = jobDesc.toLowerCase().match(/\b[a-z][a-z0-9+#.]*\b/g) || [];
+    const freq = {};
+    words.forEach(w => { if (!stopwords.has(w) && w.length > 2) freq[w] = (freq[w]||0) + 1; });
+
+    const keywords = Object.entries(freq)
+      .sort((a,b) => b[1]-a[1])
+      .slice(0, 20)
+      .map(([w]) => w);
+
+    const matched = keywords.filter(k => resumeLower.includes(k));
+    const missing = keywords.filter(k => !resumeLower.includes(k));
+
+    const score = Math.round((matched.length / Math.max(keywords.length, 1)) * 100);
+
+    let verdict, suggestion;
+    if (score >= 70) {
+      verdict = '🚀 Strong Match — Recommended for Interview';
+      suggestion = `This resume is a strong match! The candidate covers ${matched.length} out of ${keywords.length} key requirements. Consider fast-tracking to the interview stage.`;
+    } else if (score >= 40) {
+      verdict = '⚠️ Partial Match — Review Recommended';
+      suggestion = `Moderate match detected. Missing keywords: ${missing.slice(0,5).join(', ')}. The candidate may need upskilling in these areas before being considered a strong fit.`;
+    } else {
+      verdict = '❌ Weak Match — Not Recommended';
+      suggestion = `Low match score. The resume is missing critical skills like: ${missing.slice(0,5).join(', ')}. This candidate may not be suitable for this role without significant reskilling.`;
+    }
+
+    return { score, matched, missing, verdict, suggestion, total: keywords.length };
+  }
+
+  function showResults({ score, matched, missing, verdict, suggestion, total }) {
+    document.getElementById('results').style.display = 'block';
+
+    const circumference = 2 * Math.PI * 70;
+    const offset = circumference - (score / 100) * circumference;
+    setTimeout(() => {
+      document.getElementById('ringFill').style.strokeDashoffset = offset;
+    }, 100);
+
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 2;
+      if (current >= score) { current = score; clearInterval(interval); }
+      document.getElementById('scoreNum').textContent = current;
+    }, 20);
+
+    const verdictEl = document.getElementById('verdict');
+    verdictEl.textContent = verdict;
+    verdictEl.className = 'verdict ' + (score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low');
+
+    document.getElementById('matchCount').textContent = matched.length;
+    document.getElementById('missCount').textContent = missing.length;
+    document.getElementById('totalCount').textContent = total;
+
+    const matchedEl = document.getElementById('matchedKeywords');
+    matchedEl.innerHTML = matched.length
+      ? matched.map(k => `<span class="keyword-tag match">${k}</span>`).join('')
+      : '<span style="color:var(--muted);font-family:Space Mono,monospace;font-size:12px">No matches found</span>';
+
+    const missingEl = document.getElementById('missingKeywords');
+    missingEl.innerHTML = missing.length
+      ? missing.map(k => `<span class="keyword-tag miss">${k}</span>`).join('')
+      : '<span style="color:var(--accent);font-family:Space Mono,monospace;font-size:12px">All keywords matched! 🎉</span>';
+
+    document.getElementById('suggestion').textContent = suggestion;
+  }
+
+  function resetForm() {
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('resumeFile').value = '';
+    document.getElementById('fileSelected').style.display = 'none';
+    document.getElementById('jobDesc').value = '';
+    document.getElementById('scoreNum').textContent = '0';
+    document.getElementById('ringFill').style.strokeDashoffset = 440;
+  }
+</script>
+</body>
+</html>
